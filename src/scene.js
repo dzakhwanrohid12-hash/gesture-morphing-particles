@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CONTROL_SMOOTHING, IS_LOW_POWER, PARTICLE_COUNT } from "./config.js";
+import { CONTROL_SMOOTHING, IS_LOW_POWER, PARTICLE_COUNT, PINCH } from "./config.js";
 import { calculateTarget } from "./shapes.js";
 
 export function createScene(container, reduceMotionQuery) {
@@ -47,6 +47,11 @@ export function createScene(container, reduceMotionQuery) {
   let targetScale = 1;
   let targetRotationZ = 0;
   let activeGesture = "chaos";
+  let pinchPoint = null;
+  let currentPull = 0;
+  const pinchWorld = new THREE.Vector3();
+  const pinchLocal = new THREE.Vector3();
+  const inverseMatrix = new THREE.Matrix4();
 
   function applyGesture(gesture) {
     activeGesture = gesture;
@@ -61,6 +66,23 @@ export function createScene(container, reduceMotionQuery) {
     targetRotationZ = rotationZ;
   }
 
+  function setPinch(point) {
+    pinchPoint = point;
+  }
+
+  function updatePinchLocal() {
+    const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
+    const visibleWidth = visibleHeight * camera.aspect;
+    pinchWorld.set(
+      (pinchPoint.x - 0.5) * visibleWidth,
+      -(pinchPoint.y - 0.5) * visibleHeight,
+      0
+    );
+    particlesMesh.updateWorldMatrix(true, false);
+    inverseMatrix.copy(particlesMesh.matrixWorld).invert();
+    pinchLocal.copy(pinchWorld).applyMatrix4(inverseMatrix);
+  }
+
   function resize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -69,12 +91,6 @@ export function createScene(container, reduceMotionQuery) {
 
   function animate() {
     window.requestAnimationFrame(animate);
-    const current = particlesMesh.geometry.attributes.position.array;
-
-    for (let i = 0; i < PARTICLE_COUNT * 3; i++) {
-      current[i] += (targetPositions[i] - current[i]) * 0.08;
-    }
-    particlesMesh.geometry.attributes.position.needsUpdate = true;
 
     particlesMesh.scale.x += (targetScale - particlesMesh.scale.x) * CONTROL_SMOOTHING;
     particlesMesh.scale.y = particlesMesh.scale.x;
@@ -94,11 +110,30 @@ export function createScene(container, reduceMotionQuery) {
       }
     }
 
+    currentPull += ((pinchPoint ? PINCH.pull : 0) - currentPull) * PINCH.smoothing;
+    if (pinchPoint) updatePinchLocal();
+
+    const current = particlesMesh.geometry.attributes.position.array;
+    const pull = currentPull;
+    const px = pinchLocal.x;
+    const py = pinchLocal.y;
+    const pz = pinchLocal.z;
+
+    for (let i = 0; i < PARTICLE_COUNT * 3; i += 3) {
+      const baseX = targetPositions[i];
+      const baseY = targetPositions[i + 1];
+      const baseZ = targetPositions[i + 2];
+      current[i] += (baseX + (px - baseX) * pull - current[i]) * 0.08;
+      current[i + 1] += (baseY + (py - baseY) * pull - current[i + 1]) * 0.08;
+      current[i + 2] += (baseZ + (pz - baseZ) * pull - current[i + 2]) * 0.08;
+    }
+    particlesMesh.geometry.attributes.position.needsUpdate = true;
+
     renderer.render(scene, camera);
   }
 
   applyGesture("chaos");
   animate();
 
-  return { applyGesture, setHandControl, resize };
+  return { applyGesture, setHandControl, setPinch, resize };
 }

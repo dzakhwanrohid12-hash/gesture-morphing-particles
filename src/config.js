@@ -14,6 +14,13 @@ export const TWO_HAND_SCALE = {
 export const MAX_PALM_TILT = Math.PI / 3;
 export const CONTROL_SMOOTHING = 0.12;
 export const VIDEO_ASPECT = 480 / 640;
+export const PINCH = {
+  engageRatio: 0.3,
+  releaseRatio: 0.5,
+  pull: 0.85,
+  holdMs: 100,
+  smoothing: 0.1,
+};
 export const MODEL_URL = withBase("models/hand_landmarker.task");
 export const WASM_URL = withBase("wasm");
 

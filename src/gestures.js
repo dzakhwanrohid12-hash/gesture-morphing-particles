@@ -62,10 +62,15 @@ export function createGestureTracker({ onCommit, onIndicator }) {
     }
   }
 
+  function suspend() {
+    pendingGesture = null;
+    pendingSince = 0;
+  }
+
   function reset() {
     pendingGesture = null;
     pendingSince = 0;
   }
 
-  return { process, reset };
+  return { process, suspend, reset };
 }

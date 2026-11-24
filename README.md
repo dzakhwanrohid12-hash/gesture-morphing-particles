@@ -17,6 +17,10 @@ Gestur baru hanya di-commit setelah stabil selama 300 ms.
 
 Jarak antara kedua telapak mengatur ukuran bentuk, dari 0.6× sampai 1.8×. Kemiringan telapak tangan pertama memutar bentuk; posisi tangan tetap mengontrol Saturnus dan hati seperti sebelumnya. Gestur selalu diambil dari tangan pertama. Jika hanya satu tangan terdeteksi, ukuran kembali ke 1× dan kontrol satu tangan tetap berfungsi normal.
 
+## Pinch
+
+Rapatkan jempol dan telunjuk tangan pertama selama sekitar 100 ms untuk menarik partikel ke titik di antara kedua ujung jari (sekitar 85%). Lepaskan jari untuk kembali ke bentuk aktif tanpa mengganti gestur; HUD tetap menampilkan bentuk yang sedang berjalan. Ambang lepas sengaja lebih renggang daripada ambang aktif agar tidak berkedip.
+
 ## Pengembangan
 
 Butuh Node `^20.19.0` atau `>=22.12.0`.
@@ -60,6 +64,7 @@ Push ke branch `main` menjalankan `.github/workflows/deploy.yml` dan men-deploy 
 - `src/scene.js`: scene, animasi, dan resize Three.js.
 - `src/gestures.js`: deteksi dan stabilisasi gestur.
 - `src/interaction.js`: jarak dua tangan, skala, dan kemiringan telapak.
+- `src/pinch.js`: deteksi pinch, debounce, dan titik tarik.
 - `src/camera.js`: Hand Landmarker, `getUserMedia`, dan pesan error kamera.
 - `src/ui.js`: panel, indikator gestur, dan fullscreen.
 - `src/main.js`: orkestrasi aplikasi.

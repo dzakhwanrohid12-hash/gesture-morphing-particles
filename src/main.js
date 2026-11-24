@@ -4,6 +4,7 @@ import { createScene } from "./scene.js";
 import { createGestureTracker } from "./gestures.js";
 import { startHandTracking } from "./camera.js";
 import { NEUTRAL_HAND_CONTROL, readHandInteraction } from "./interaction.js";
+import { createPinchTracker } from "./pinch.js";
 
 const ui = createUI();
 const scene = createScene(
@@ -14,6 +15,7 @@ const tracker = createGestureTracker({
   onIndicator: (gesture) => ui.updateIndicator(gesture),
   onCommit: (gesture) => scene.applyGesture(gesture),
 });
+const pinchTracker = createPinchTracker();
 
 let tracking = null;
 let starting = false;
@@ -22,6 +24,8 @@ function handleLandmarks(landmarks) {
   if (document.body.dataset.appState !== "active") return;
 
   if (landmarks.length === 0) {
+    pinchTracker.process(null);
+    scene.setPinch(null);
     tracker.process(null);
     scene.setHandControl(NEUTRAL_HAND_CONTROL);
     return;
@@ -34,7 +38,15 @@ function handleLandmarks(landmarks) {
     scale,
     rotationZ,
   });
-  tracker.process(lm);
+
+  const pinch = pinchTracker.process(landmarks);
+  if (pinch.active) {
+    scene.setPinch(pinch.point);
+    tracker.suspend();
+  } else {
+    scene.setPinch(null);
+    tracker.process(lm);
+  }
 }
 
 function handleTrackingError(error) {
@@ -51,6 +63,8 @@ async function startExperience() {
   tracking?.stop();
   tracking = null;
   tracker.reset();
+  pinchTracker.reset();
+  scene.setPinch(null);
 
   try {
     const nextTracking = await startHandTracking(ui.video, handleLandmarks, handleTrackingError);
