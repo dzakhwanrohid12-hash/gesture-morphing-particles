@@ -58,6 +58,10 @@ export function createScene(container, reduceMotionQuery) {
     const target = calculateTarget(gesture, PARTICLE_COUNT);
     targetPositions = target.positions;
     particlesMesh.material.color.setHex(target.color);
+    if (gesture === "text") {
+      pinchPoint = null;
+      particlesMesh.rotation.set(0, 0, 0);
+    }
   }
 
   function setHandControl({ centroid = handCentroid, scale = targetScale, rotationZ = targetRotationZ } = {}) {
@@ -67,7 +71,7 @@ export function createScene(container, reduceMotionQuery) {
   }
 
   function setPinch(point) {
-    pinchPoint = point;
+    pinchPoint = activeGesture === "text" ? null : point;
   }
 
   function updatePinchLocal() {
@@ -95,23 +99,27 @@ export function createScene(container, reduceMotionQuery) {
     particlesMesh.scale.x += (targetScale - particlesMesh.scale.x) * CONTROL_SMOOTHING;
     particlesMesh.scale.y = particlesMesh.scale.x;
     particlesMesh.scale.z = particlesMesh.scale.x;
-    particlesMesh.rotation.z += (targetRotationZ - particlesMesh.rotation.z) * CONTROL_SMOOTHING;
 
-    if (activeGesture === "saturn" || activeGesture === "heart") {
+    if (activeGesture === "text") {
+      particlesMesh.rotation.set(0, 0, 0);
+    } else if (activeGesture === "saturn" || activeGesture === "heart") {
+      particlesMesh.rotation.z += (targetRotationZ - particlesMesh.rotation.z) * CONTROL_SMOOTHING;
       const targetRotY = (handCentroid.x - 0.5) * 5;
       const targetRotX = (handCentroid.y - 0.5) * 5;
 
       particlesMesh.rotation.y += (targetRotY - particlesMesh.rotation.y) * 0.1;
       particlesMesh.rotation.x += (targetRotX - particlesMesh.rotation.x) * 0.1;
     } else {
+      particlesMesh.rotation.z += (targetRotationZ - particlesMesh.rotation.z) * CONTROL_SMOOTHING;
       particlesMesh.rotation.x += (0 - particlesMesh.rotation.x) * 0.05;
       if (!reduceMotionQuery.matches) {
         particlesMesh.rotation.y += 0.001;
       }
     }
 
-    currentPull += ((pinchPoint ? PINCH.pull : 0) - currentPull) * PINCH.smoothing;
-    if (pinchPoint) updatePinchLocal();
+    const pulling = pinchPoint && activeGesture !== "text";
+    currentPull += ((pulling ? PINCH.pull : 0) - currentPull) * PINCH.smoothing;
+    if (pulling) updatePinchLocal();
 
     const current = particlesMesh.geometry.attributes.position.array;
     const pull = currentPull;

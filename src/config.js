@@ -17,6 +17,7 @@ export const VIDEO_ASPECT = 480 / 640;
 export const PINCH = {
   engageRatio: 0.3,
   releaseRatio: 0.5,
+  minExtendedFingers: 3,
   pull: 0.85,
   holdMs: 100,
   smoothing: 0.1,

@@ -11,7 +11,7 @@ Aplikasi browser yang mengubah partikel mengikuti gestur tangan. Tiga.js merende
 | Peace | I LOVE YOU |
 | Metal | Hati, ikuti tangan |
 
-Gestur baru hanya di-commit setelah stabil selama 300 ms.
+Gestur baru hanya di-commit setelah stabil selama 300 ms. Tulisan **I LOVE YOU** dikunci datar menghadap kamera, tidak ikut rotasi telapak maupun putaran galaxy.
 
 ## Kontrol dua tangan
 
@@ -19,7 +19,7 @@ Jarak antara kedua telapak mengatur ukuran bentuk, dari 0.6× sampai 1.8×. Kemi
 
 ## Pinch
 
-Rapatkan jempol dan telunjuk tangan pertama selama sekitar 100 ms untuk menarik partikel ke titik di antara kedua ujung jari (sekitar 85%). Lepaskan jari untuk kembali ke bentuk aktif tanpa mengganti gestur; HUD tetap menampilkan bentuk yang sedang berjalan. Ambang lepas sengaja lebih renggang daripada ambang aktif agar tidak berkedip.
+Rapatkan jempol dan telunjuk tangan pertama selama sekitar 100 ms untuk menarik partikel ke titik di antara kedua ujung jari (sekitar 85%). Pinch hanya diterima jika jari tengah, manis, dan kelingking ikut terjuntai, sehingga mengepal atau peace tidak memicunya. Lepaskan jari untuk kembali ke bentuk aktif tanpa mengganti gestur; HUD tetap menampilkan bentuk yang sedang berjalan. Ambang lepas sengaja lebih renggang daripada ambang aktif agar tidak berkedip.
 
 ## Pengembangan
 

@@ -1,4 +1,5 @@
 import { PINCH, VIDEO_ASPECT } from "./config.js";
+import { isFingerExtended } from "./gestures.js";
 
 const IDLE = Object.freeze({ active: false, point: null });
 
@@ -19,6 +20,13 @@ function pinchPoint(landmarks) {
   };
 }
 
+function allowsPinch(landmarks) {
+  const extended = ["middle", "ring", "pinky"].filter((finger) =>
+    isFingerExtended(landmarks, finger)
+  ).length;
+  return extended >= PINCH.minExtendedFingers;
+}
+
 export function createPinchTracker() {
   let active = false;
   let pendingSince = null;
@@ -30,7 +38,13 @@ export function createPinchTracker() {
       return IDLE;
     }
 
-    const ratio = pinchRatio(landmarks[0]);
+    const hand = landmarks[0];
+    if (!allowsPinch(hand)) {
+      reset();
+      return IDLE;
+    }
+
+    const ratio = pinchRatio(hand);
 
     if (!active) {
       if (ratio > PINCH.engageRatio) {
@@ -47,12 +61,12 @@ export function createPinchTracker() {
       }
 
       active = true;
-      point = pinchPoint(landmarks[0]);
+      point = pinchPoint(hand);
       return { active, point };
     }
 
     if (ratio < PINCH.releaseRatio) {
-      point = pinchPoint(landmarks[0]);
+      point = pinchPoint(hand);
       return { active, point };
     }
 
