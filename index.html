@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gesture Morphing Particles</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -25,36 +31,86 @@
       crossorigin="anonymous"
     ></script>
   </head>
-  <body>
-    <video class="input_video"></video>
+  <body data-app-state="intro">
+    <svg class="icon-sprite" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="icon-open" viewBox="0 0 32 32">
+        <path d="M8 27V15M12 27V9M16 27V7M20 27V9M24 27V15" />
+        <path d="M7 27h18" />
+      </symbol>
+      <symbol id="icon-saturn" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="7" />
+        <ellipse cx="16" cy="16" rx="14" ry="5" transform="rotate(-20 16 16)" />
+      </symbol>
+      <symbol id="icon-peace" viewBox="0 0 32 32">
+        <path d="M13 26V8M19 26V8" />
+        <path d="M9 26h14" />
+      </symbol>
+      <symbol id="icon-metal" viewBox="0 0 32 32">
+        <path d="M9 26V8M23 26V8" />
+        <path d="M9 18c4-3 10-3 14 0" />
+        <path d="M13 26v-5M19 26v-5" />
+      </symbol>
+    </svg>
 
-    <div id="canvas-container"></div>
+    <video class="input_video" playsinline muted aria-hidden="true"></video>
+    <div id="canvas-container" aria-hidden="true"></div>
 
-    <div class="ui-panel">
-      <h3>Gesture Control</h3>
-      <div class="status">
-        Mode:
-        <span id="gestureStatus" style="font-weight: bold; color: #0ff"
-          >Waiting...</span
-        >
+    <main class="intro-panel">
+      <section class="panel panel--intro">
+        <h1>Gerakan jadi bentuk</h1>
+        <p class="intro-copy">
+          Tunjukkan satu gestur ke kamera. Partikel mengikuti tanganmu dan berubah
+          jadi galaxy, Saturnus, tulisan, atau hati.
+        </p>
+        <div class="gesture-guide" role="list">
+          <div class="gesture-row" role="listitem" style="--gesture-color: #e6f6ff">
+            <svg class="gesture-icon" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-open" /></svg>
+            <div><strong>Open</strong><span>Galaxy</span></div>
+          </div>
+          <div class="gesture-row" role="listitem" style="--gesture-color: #ffaa00">
+            <svg class="gesture-icon" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-saturn" /></svg>
+            <div><strong>Fist</strong><span>Saturnus, ikuti tangan</span></div>
+          </div>
+          <div class="gesture-row" role="listitem" style="--gesture-color: #00e5ff">
+            <svg class="gesture-icon" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-peace" /></svg>
+            <div><strong>Peace</strong><span>I LOVE YOU</span></div>
+          </div>
+          <div class="gesture-row" role="listitem" style="--gesture-color: #ff00ff">
+            <svg class="gesture-icon" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-metal" /></svg>
+            <div><strong>Metal</strong><span>Hati, ikuti tangan</span></div>
+          </div>
+        </div>
+        <button id="startButton" class="primary-btn" type="button">Mulai</button>
+      </section>
+
+      <section class="panel panel--status panel--loading" aria-live="polite">
+        <h2>Menyiapkan kamera</h2>
+        <p>Memuat model tangan. Izinkan akses kamera jika browser meminta.</p>
+        <div class="loading-track"><span class="loading-fill"></span></div>
+      </section>
+
+      <section class="panel panel--status panel--error" role="alert">
+        <h2 id="errorTitle">Belum bisa dimulai</h2>
+        <p id="errorMessage">Model tangan atau kamera gagal dimuat. Periksa koneksi lalu coba lagi.</p>
+        <button id="retryButton" class="primary-btn" type="button">Coba lagi</button>
+      </section>
+    </main>
+
+    <aside class="hud">
+      <div id="gestureStatus" class="gesture-indicator" data-gesture="none" aria-live="polite">
+        <span class="icon-stack" aria-hidden="true">
+          <svg class="gesture-icon" data-icon="chaos" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-open" /></svg>
+          <svg class="gesture-icon" data-icon="saturn" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-saturn" /></svg>
+          <svg class="gesture-icon" data-icon="text" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-peace" /></svg>
+          <svg class="gesture-icon" data-icon="heart" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-metal" /></svg>
+        </span>
+        <span class="gesture-label">
+          <strong id="gestureLabel">Menunggu</strong>
+          <small id="gestureHint">Tunjukkan tangan</small>
+        </span>
       </div>
-      <ul
-        style="
-          font-size: 11px;
-          color: #aaa;
-          padding-left: 20px;
-          line-height: 1.6;
-        "
-      >
-        <li>✊ Fist: Saturnus (Follow Hand)</li>
-        <li>✌️ 2 Fingers: Text "I LOVE YOU"</li>
-        <li>🤘 Metal: Heart Shape</li>
-        <li>🖐️ 5 Fingers: Galaxy Explosion</li>
-      </ul>
-      <button class="fullscreen-btn" onclick="toggleFullScreen()">
-        ⛶ Fullscreen
-      </button>
-    </div>
+      <button class="fullscreen-btn" type="button" onclick="toggleFullScreen()">Layar penuh</button>
+    </aside>
 
     <script src="script.js"></script>
   </body>

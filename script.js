@@ -2,15 +2,36 @@
 let scene, camera, renderer, particlesMesh;
 let currentPositions = [];
 let targetPositions = [];
-const count = 9000;
+const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+const smallScreen = Math.min(window.innerWidth, window.innerHeight) < 600;
+const lowMemory = navigator.deviceMemory !== undefined && navigator.deviceMemory <= 4;
+const lowPowerScreen = smallScreen || lowMemory || window.matchMedia("(pointer: coarse)").matches;
+const count = lowPowerScreen ? 4000 : 9000;
 const container = document.getElementById("canvas-container");
 const gestureStatus = document.getElementById("gestureStatus");
+const gestureLabel = document.getElementById("gestureLabel");
+const gestureHint = document.getElementById("gestureHint");
+const startButton = document.getElementById("startButton");
+const retryButton = document.getElementById("retryButton");
+const errorTitle = document.getElementById("errorTitle");
+const errorMessage = document.getElementById("errorMessage");
 
-// Variabel kontrol interaktif (Posisi Tangan)
+const gestureCopy = {
+  chaos: { name: "Open", hint: "Galaxy" },
+  saturn: { name: "Fist", hint: "Saturnus, ikuti tangan" },
+  text: { name: "Peace", hint: "I LOVE YOU" },
+  heart: { name: "Metal", hint: "Hati, ikuti tangan" },
+  none: { name: "Menunggu", hint: "Tunjukkan tangan" },
+};
+
 let handCentroid = { x: 0.5, y: 0.5 };
 let activeGesture = "chaos";
+let pendingGesture = null;
+let pendingSince = 0;
+let swapTimer = 0;
+let starting = false;
+const HOLD_MS = 300;
 
-// Canvas untuk scan teks
 const textCanvas = document.createElement("canvas");
 const textCtx = textCanvas.getContext("2d");
 textCanvas.width = 400;
@@ -28,13 +49,13 @@ function initThree() {
   camera.position.z = 40;
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPowerScreen ? 1.5 : 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   container.appendChild(renderer.domElement);
 
   const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(count * 3);
 
-  // Posisi awal random
   for (let i = 0; i < count * 3; i++) {
     positions[i] = (Math.random() - 0.5) * 50;
     currentPositions.push(positions[i]);
@@ -66,11 +87,9 @@ function calculateTarget(shape) {
   targetPositions = [];
 
   if (shape === "saturn") {
-    // --- SATURNUS ---
     const sphereCount = Math.floor(count * 0.7);
     const ringCount = count - sphereCount;
 
-    // Bola
     for (let i = 0; i < sphereCount; i++) {
       const r = 8 * Math.cbrt(Math.random());
       const theta = Math.random() * Math.PI * 2;
@@ -81,7 +100,6 @@ function calculateTarget(shape) {
         r * Math.cos(phi)
       );
     }
-    // Cincin
     for (let i = 0; i < ringCount; i++) {
       const r = 12 + Math.random() * 8;
       const theta = Math.random() * Math.PI * 2;
@@ -90,20 +108,17 @@ function calculateTarget(shape) {
       const y = (Math.random() - 0.5) * 0.5;
       targetPositions.push(x, y, z);
     }
-    particlesMesh.material.color.setHex(0xffaa00); // Emas
+    particlesMesh.material.color.setHex(0xffaa00);
   } else if (shape === "chaos") {
-    // --- GALAXY ---
     for (let i = 0; i < count; i++) {
       targetPositions.push((Math.random() - 0.5) * 80);
       targetPositions.push((Math.random() - 0.5) * 80);
       targetPositions.push((Math.random() - 0.5) * 80);
     }
-    particlesMesh.material.color.setHex(0xffffff); // Putih
+    particlesMesh.material.color.setHex(0xffffff);
   } else if (shape === "heart") {
-    // --- HATI PADAT (SOLID HEART) ---
     for (let i = 0; i < count; i++) {
       const t = Math.random() * Math.PI * 2;
-      // Scale random (akar kuadrat) agar isi padat merata
       const s = Math.sqrt(Math.random());
 
       let x_base = 16 * Math.pow(Math.sin(t), 3);
@@ -115,13 +130,12 @@ function calculateTarget(shape) {
 
       let x = x_base * s;
       let y = y_base * s;
-      let z = (Math.random() - 0.5) * 10 * s; // Ketebalan Z juga mengikuti scale
+      let z = (Math.random() - 0.5) * 10 * s;
 
       targetPositions.push(x, y, z);
     }
-    particlesMesh.material.color.setHex(0xff00ff); // Pink
+    particlesMesh.material.color.setHex(0xff00ff);
   } else if (shape === "text") {
-    // --- I LOVE YOU ---
     textCtx.clearRect(0, 0, 400, 200);
     textCtx.fillStyle = "black";
     textCtx.fillRect(0, 0, 400, 200);
@@ -138,7 +152,6 @@ function calculateTarget(shape) {
     for (let y = 0; y < 200; y += 2) {
       for (let x = 0; x < 400; x += 2) {
         if (data[(y * 400 + x) * 4] > 128) {
-          // Koordinat dibalik (-) agar terbaca jelas
           textCoords.push({ x: (x - 200) / 4, y: -(y - 100) / 4 });
         }
       }
@@ -148,7 +161,7 @@ function calculateTarget(shape) {
       const coord = textCoords[i % textCoords.length];
       targetPositions.push(coord.x, coord.y, (Math.random() - 0.5) * 2);
     }
-    particlesMesh.material.color.setHex(0x00ffff); // Cyan
+    particlesMesh.material.color.setHex(0x00ffff);
   }
 }
 
@@ -157,33 +170,43 @@ function animate() {
   requestAnimationFrame(animate);
   const positions = particlesMesh.geometry.attributes.position.array;
 
-  // Morphing
   for (let i = 0; i < count * 3; i++) {
     positions[i] += (targetPositions[i] - positions[i]) * 0.08;
   }
   particlesMesh.geometry.attributes.position.needsUpdate = true;
 
-  // --- LOGIKA KONTROL ---
-  // Sekarang SATURNUS dan HEART bisa digerakkan manual
   if (activeGesture === "saturn" || activeGesture === "heart") {
-    // INTERAKTIF: Mengikuti Posisi Tangan
-    // Range gerak diperluas sedikit (* 5) agar lebih responsif
     const targetRotY = (handCentroid.x - 0.5) * 5;
     const targetRotX = (handCentroid.y - 0.5) * 5;
 
-    // Smooth movement (Lerp)
     particlesMesh.rotation.y += (targetRotY - particlesMesh.rotation.y) * 0.1;
     particlesMesh.rotation.x += (targetRotX - particlesMesh.rotation.x) * 0.1;
   } else {
-    // --- MODE AUTO (TEXT & CHAOS) ---
-    // Tulisan I LOVE YOU harus tegak, jadi reset X rotation ke 0
     particlesMesh.rotation.x += (0 - particlesMesh.rotation.x) * 0.05;
-
-    // Putar Y sangat pelan agar terbaca
-    particlesMesh.rotation.y += 0.001;
+    if (!reduceMotionQuery.matches) {
+      particlesMesh.rotation.y += 0.001;
+    }
   }
 
   renderer.render(scene, camera);
+}
+
+function updateIndicator(gesture, animateSwap = true) {
+  if (gestureStatus.dataset.gesture === gesture) return;
+  gestureStatus.dataset.gesture = gesture;
+  gestureLabel.textContent = gestureCopy[gesture].name;
+  gestureHint.textContent = gestureCopy[gesture].hint;
+
+  if (!animateSwap) return;
+  gestureStatus.classList.add("is-swapping");
+  window.clearTimeout(swapTimer);
+  swapTimer = window.setTimeout(() => gestureStatus.classList.remove("is-swapping"), 180);
+}
+
+function commitGesture(gesture) {
+  activeGesture = gesture;
+  updateIndicator(gesture);
+  calculateTarget(gesture);
 }
 
 // --- 4. DETEKSI GESTURE ---
@@ -199,7 +222,6 @@ function onResults(results) {
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
     const lm = results.multiHandLandmarks[0];
 
-    // Ambil titik tengah tangan untuk kontrol rotasi
     handCentroid = { x: 1 - lm[9].x, y: lm[9].y };
 
     const index = isFingerExtended(lm, "index");
@@ -209,43 +231,40 @@ function onResults(results) {
 
     let detectedGesture = "unknown";
 
-    // 1. Saturnus (Fist)
     if (!index && !middle && !ring && !pinky) {
       detectedGesture = "saturn";
-    }
-    // 2. I Love You (2 Jari)
-    else if (index && middle && !ring && !pinky) {
+    } else if (index && middle && !ring && !pinky) {
       detectedGesture = "text";
-    }
-    // 3. Heart (Metal)
-    else if (index && !middle && !ring && pinky) {
+    } else if (index && !middle && !ring && pinky) {
       detectedGesture = "heart";
-    }
-    // 4. Galaxy (Open)
-    else if (index && middle && ring && pinky) {
+    } else if (index && middle && ring && pinky) {
       detectedGesture = "chaos";
     }
 
-    if (detectedGesture !== "unknown" && detectedGesture !== activeGesture) {
-      activeGesture = detectedGesture;
+    if (detectedGesture === "unknown") {
+      pendingGesture = null;
+      return;
+    }
 
-      // Update Teks Status UI
-      if (activeGesture === "saturn") {
-        gestureStatus.innerText = "FIST (Saturn Control)";
-        calculateTarget("saturn");
-      } else if (activeGesture === "text") {
-        gestureStatus.innerText = "PEACE (Reading Mode)";
-        calculateTarget("text");
-      } else if (activeGesture === "heart") {
-        gestureStatus.innerText = "METAL (Heart Control)"; // Status berubah jadi Control
-        calculateTarget("heart");
-      } else if (activeGesture === "chaos") {
-        gestureStatus.innerText = "OPEN (Galaxy)";
-        calculateTarget("chaos");
-      }
+    if (detectedGesture === activeGesture) {
+      pendingGesture = null;
+      updateIndicator(activeGesture);
+      return;
+    }
+
+    if (detectedGesture !== pendingGesture) {
+      pendingGesture = detectedGesture;
+      pendingSince = performance.now();
+      return;
+    }
+
+    if (performance.now() - pendingSince >= HOLD_MS) {
+      pendingGesture = null;
+      commitGesture(detectedGesture);
     }
   } else {
-    gestureStatus.innerText = "Show Hand";
+    pendingGesture = null;
+    updateIndicator("none");
   }
 }
 
@@ -267,8 +286,63 @@ const cameraUtils = new Camera(videoElement, {
   },
   width: 640,
   height: 480,
+  facingMode: "user",
 });
-cameraUtils.start();
+
+function describeCameraError(error) {
+  const name = error && error.name;
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+    return {
+      title: "Izin kamera ditolak",
+      message: "Izinkan akses kamera di browser, lalu coba lagi.",
+    };
+  }
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+    return {
+      title: "Kamera tidak ditemukan",
+      message: "Hubungkan kamera lalu coba lagi.",
+    };
+  }
+  if (name === "NotReadableError" || name === "TrackStartError") {
+    return {
+      title: "Kamera sedang dipakai",
+      message: "Tutup aplikasi lain yang memakai kamera, lalu coba lagi.",
+    };
+  }
+  if (name === "OverconstrainedError") {
+    return {
+      title: "Kamera tidak mendukung pengaturan ini",
+      message: "Coba lagi dengan kamera depan yang tersedia.",
+    };
+  }
+  return {
+    title: "Belum bisa dimulai",
+    message: "Model tangan atau kamera gagal dimuat. Periksa koneksi lalu coba lagi.",
+  };
+}
+
+async function startExperience() {
+  if (starting) return;
+  starting = true;
+  document.body.dataset.appState = "loading";
+
+  try {
+    await hands.initialize();
+    await cameraUtils.start();
+    document.body.dataset.appState = "active";
+  } catch (error) {
+    const copy = describeCameraError(error);
+    errorTitle.textContent = copy.title;
+    errorMessage.textContent = copy.message;
+    document.body.dataset.appState = "error";
+    retryButton.focus();
+  } finally {
+    starting = false;
+  }
+}
+
+startButton.addEventListener("click", startExperience);
+retryButton.addEventListener("click", startExperience);
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
