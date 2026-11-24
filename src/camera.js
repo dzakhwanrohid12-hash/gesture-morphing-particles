@@ -9,7 +9,7 @@ async function createLandmarker(delegate) {
       delegate,
     },
     runningMode: "VIDEO",
-    numHands: 1,
+    numHands: 2,
     minHandDetectionConfidence: 0.7,
     minHandPresenceConfidence: 0.7,
     minTrackingConfidence: 0.7,

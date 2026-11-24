@@ -5,6 +5,15 @@ const lowPowerScreen = smallScreen || lowMemory || window.matchMedia("(pointer: 
 export const IS_LOW_POWER = lowPowerScreen;
 export const PARTICLE_COUNT = lowPowerScreen ? 4000 : 9000;
 export const HOLD_MS = 300;
+export const TWO_HAND_SCALE = {
+  min: 0.6,
+  max: 1.8,
+  nearDistance: 0.2,
+  farDistance: 0.7,
+};
+export const MAX_PALM_TILT = Math.PI / 3;
+export const CONTROL_SMOOTHING = 0.12;
+export const VIDEO_ASPECT = 480 / 640;
 export const MODEL_URL = withBase("models/hand_landmarker.task");
 export const WASM_URL = withBase("wasm");
 

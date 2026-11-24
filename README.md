@@ -13,6 +13,10 @@ Aplikasi browser yang mengubah partikel mengikuti gestur tangan. Tiga.js merende
 
 Gestur baru hanya di-commit setelah stabil selama 300 ms.
 
+## Kontrol dua tangan
+
+Jarak antara kedua telapak mengatur ukuran bentuk, dari 0.6× sampai 1.8×. Kemiringan telapak tangan pertama memutar bentuk; posisi tangan tetap mengontrol Saturnus dan hati seperti sebelumnya. Gestur selalu diambil dari tangan pertama. Jika hanya satu tangan terdeteksi, ukuran kembali ke 1× dan kontrol satu tangan tetap berfungsi normal.
+
 ## Pengembangan
 
 Butuh Node `^20.19.0` atau `>=22.12.0`.
@@ -55,6 +59,7 @@ Push ke branch `main` menjalankan `.github/workflows/deploy.yml` dan men-deploy 
 - `src/shapes.js`: matematika bentuk partikel.
 - `src/scene.js`: scene, animasi, dan resize Three.js.
 - `src/gestures.js`: deteksi dan stabilisasi gestur.
+- `src/interaction.js`: jarak dua tangan, skala, dan kemiringan telapak.
 - `src/camera.js`: Hand Landmarker, `getUserMedia`, dan pesan error kamera.
 - `src/ui.js`: panel, indikator gestur, dan fullscreen.
 - `src/main.js`: orkestrasi aplikasi.

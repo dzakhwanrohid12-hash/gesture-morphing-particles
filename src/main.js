@@ -3,6 +3,7 @@ import { createUI } from "./ui.js";
 import { createScene } from "./scene.js";
 import { createGestureTracker } from "./gestures.js";
 import { startHandTracking } from "./camera.js";
+import { NEUTRAL_HAND_CONTROL, readHandInteraction } from "./interaction.js";
 
 const ui = createUI();
 const scene = createScene(
@@ -22,11 +23,17 @@ function handleLandmarks(landmarks) {
 
   if (landmarks.length === 0) {
     tracker.process(null);
+    scene.setHandControl(NEUTRAL_HAND_CONTROL);
     return;
   }
 
   const lm = landmarks[0];
-  scene.setHandCentroid({ x: 1 - lm[9].x, y: lm[9].y });
+  const { scale, rotationZ } = readHandInteraction(landmarks);
+  scene.setHandControl({
+    centroid: { x: 1 - lm[9].x, y: lm[9].y },
+    scale,
+    rotationZ,
+  });
   tracker.process(lm);
 }
 

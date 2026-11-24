@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { IS_LOW_POWER, PARTICLE_COUNT } from "./config.js";
+import { CONTROL_SMOOTHING, IS_LOW_POWER, PARTICLE_COUNT } from "./config.js";
 import { calculateTarget } from "./shapes.js";
 
 export function createScene(container, reduceMotionQuery) {
@@ -44,6 +44,8 @@ export function createScene(container, reduceMotionQuery) {
 
   let targetPositions = [];
   let handCentroid = { x: 0.5, y: 0.5 };
+  let targetScale = 1;
+  let targetRotationZ = 0;
   let activeGesture = "chaos";
 
   function applyGesture(gesture) {
@@ -53,8 +55,10 @@ export function createScene(container, reduceMotionQuery) {
     particlesMesh.material.color.setHex(target.color);
   }
 
-  function setHandCentroid(value) {
-    handCentroid = value;
+  function setHandControl({ centroid = handCentroid, scale = targetScale, rotationZ = targetRotationZ } = {}) {
+    handCentroid = centroid;
+    targetScale = scale;
+    targetRotationZ = rotationZ;
   }
 
   function resize() {
@@ -71,6 +75,11 @@ export function createScene(container, reduceMotionQuery) {
       current[i] += (targetPositions[i] - current[i]) * 0.08;
     }
     particlesMesh.geometry.attributes.position.needsUpdate = true;
+
+    particlesMesh.scale.x += (targetScale - particlesMesh.scale.x) * CONTROL_SMOOTHING;
+    particlesMesh.scale.y = particlesMesh.scale.x;
+    particlesMesh.scale.z = particlesMesh.scale.x;
+    particlesMesh.rotation.z += (targetRotationZ - particlesMesh.rotation.z) * CONTROL_SMOOTHING;
 
     if (activeGesture === "saturn" || activeGesture === "heart") {
       const targetRotY = (handCentroid.x - 0.5) * 5;
@@ -91,5 +100,5 @@ export function createScene(container, reduceMotionQuery) {
   applyGesture("chaos");
   animate();
 
-  return { applyGesture, setHandCentroid, resize };
+  return { applyGesture, setHandControl, resize };
 }
