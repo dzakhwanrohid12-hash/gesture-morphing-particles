@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gesture Morphing Particles</title>
+    <link rel="stylesheet" href="style.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <video class="input_video"></video>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-panel">
+      <h3>Gesture Control</h3>
+      <div class="status">
+        Mode:
+        <span id="gestureStatus" style="font-weight: bold; color: #0ff"
+          >Waiting...</span
+        >
+      </div>
+      <ul
+        style="
+          font-size: 11px;
+          color: #aaa;
+          padding-left: 20px;
+          line-height: 1.6;
+        "
+      >
+        <li>✊ Fist: Saturnus (Follow Hand)</li>
+        <li>✌️ 2 Fingers: Text "I LOVE YOU"</li>
+        <li>🤘 Metal: Heart Shape</li>
+        <li>🖐️ 5 Fingers: Galaxy Explosion</li>
+      </ul>
+      <button class="fullscreen-btn" onclick="toggleFullScreen()">
+        ⛶ Fullscreen
+      </button>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
